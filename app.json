@@ -4,40 +4,82 @@
     "slug": "quickpay",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "icon": "./assets/images/splash-logo.png",
+    "scheme": "quickpay",
+    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.quickpay.app"
+      "bundleIdentifier": "com.anonymous.quickpay",
+      "infoPlist": {
+        "UIStatusBarStyle": "UIStatusBarStyleLightContent",
+        "UIViewControllerBasedStatusBarAppearance": false,
+        "NSFaceIDUsageDescription": "This app uses Face ID to secure your wallet and authenticate transactions.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/splash-logo.png",
+        "backgroundImage": "./assets/images/splash-logo.png",
+        "monochromeImage": "./assets/images/splash-logo.png"
       },
-      "package": "com.quickpay.app"
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.quickpay",
+      "statusBar": {
+        "style": "light",
+        "backgroundColor": "#000000"
+      }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
     },
+    "splash": {
+      "image": "./assets/images/splash-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FF6501",
+      "dark": {
+        "backgroundColor": "#FF6501"
+      }
+    },
+    "userInterfaceStyle": "light",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-dev-client",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FF6501"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 29,
+            "compileSdkVersion": 36,
+            "buildToolsVersion": "36.0.0",
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "./plugins/withAndroidSubprojects.js"
     ],
-    "scheme": "quickpay",
-    "extra": {
-      "wdkIndexerApiKey": "",
-      "wdkIndexerUrl": "https://indexer.wdk.tether.io",
-      "network": "mainnet"
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
     }
   }
 }
-
