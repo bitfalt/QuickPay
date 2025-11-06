@@ -1,0 +1,33 @@
+{
+  "name": "quickpay",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build:worklet": "npx @tetherio/wdk-cli bundle --entry worklet/index.ts --output wdk-secret-manager-worklet.bundle.js"
+  },
+  "dependencies": {
+    "expo": "~51.0.0",
+    "expo-router": "~3.5.0",
+    "expo-secure-store": "~13.0.0",
+    "expo-crypto": "~13.0.0",
+    "expo-constants": "~16.0.0",
+    "react": "18.2.0",
+    "react-native": "0.74.0",
+    "react-native-url-polyfill": "^2.0.0",
+    "@tetherio/wdk-react-native": "^1.0.0",
+    "@tetherio/wdk-types": "^1.0.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "~18.2.0",
+    "@types/react-native": "^0.73.0",
+    "typescript": "^5.3.0",
+    "@tetherio/wdk-cli": "^1.0.0"
+  },
+  "private": true
+}
+
