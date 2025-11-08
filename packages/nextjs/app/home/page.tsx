@@ -29,6 +29,8 @@ const getCurrencyCode = (currency: string) => {
   return currency;
 };
 
+const crcNumberFormatter = new Intl.NumberFormat("en-US");
+
 const HomePage = () => {
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
 
@@ -84,7 +86,9 @@ const HomePage = () => {
           </div>
           <div className="flex flex-col items-end text-right text-xs text-[#a7ebf2]/60">
             <span>{usdBalance.currency}</span>
-            <span className="mt-1 text-sm font-semibold text-[#a7ebf2]">{crcBalance.amount.toLocaleString()} CRC</span>
+            <span className="mt-1 text-sm font-semibold text-[#a7ebf2]">
+              {crcNumberFormatter.format(crcBalance.amount)} CRC
+            </span>
           </div>
         </div>
 

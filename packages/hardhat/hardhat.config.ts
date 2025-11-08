@@ -17,12 +17,6 @@ import generateTsAbis from "./scripts/generateTsAbis";
 const deployerPrivateKey =
   process.env.__RUNTIME_DEPLOYER_PRIVATE_KEY ?? "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-// Avalanche local network pre-funded account (ewoq)
-// This account is pre-funded with 1M AVAX when you start a local Avalanche network
-// Address: 0x8db97C7cEcE249c2b98bDC0226Cc4C2A57BF52FC
-// WARNING: FOR LOCAL DEVELOPMENT ONLY! Never use this on mainnet!
-const avalancheLocalPrivateKey = "56289e99c94b6912bfc12adc093c9b51124f0dc54ac7a766b2bc5ccf558d8027";
-
 // If not set, it uses our block explorers default API keys.
 const etherscanApiKey = process.env.ETHERSCAN_V2_API_KEY || "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW";
 
@@ -45,7 +39,7 @@ const config: HardhatUserConfig = {
       },
     ],
   },
-  defaultNetwork: "localhost",
+  defaultNetwork: "avalancheFuji",
   namedAccounts: {
     deployer: {
       // By default, it will take the first Hardhat account as the deployer
@@ -62,11 +56,6 @@ const config: HardhatUserConfig = {
       },
     },
     // Avalanche Networks
-    avalancheLocal: {
-      url: "http://127.0.0.1:9650/ext/bc/C/rpc",
-      chainId: 1337, // Docker AvalancheGo uses 1337 for local network
-      accounts: [avalancheLocalPrivateKey], // Use pre-funded ewoq account for local
-    },
     avalancheFuji: {
       url: "https://api.avax-test.network/ext/bc/C/rpc",
       chainId: 43113,

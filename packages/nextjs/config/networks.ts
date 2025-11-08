@@ -56,7 +56,7 @@ export const AVALANCHE_NETWORKS: Record<string, AvalancheNetwork> = {
 
 export type NetworkId = keyof typeof AVALANCHE_NETWORKS;
 
-export const DEFAULT_NETWORK: NetworkId = "local";
+export const DEFAULT_NETWORK: NetworkId = "fuji";
 
 export function getNetworkById(id: NetworkId): AvalancheNetwork {
   return AVALANCHE_NETWORKS[id];

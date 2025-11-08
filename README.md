@@ -1,11 +1,11 @@
 # WDK Avalanche Starter 🏔️
 
-A fully integrated Avalanche C-Chain development starter built on Scaffold-ETH 2, powered by the [Tether Wallet Development Kit (WDK)](https://docs.wallet.tether.io/). This starter provides a complete development environment for building dApps on Avalanche Local, Fuji Testnet, and Mainnet.
+A fully integrated Avalanche C-Chain development starter built on Scaffold-ETH 2, powered by the [Tether Wallet Development Kit (WDK)](https://docs.wallet.tether.io/). The stack now targets the Avalanche **Fuji Testnet** by default while still offering optional support for local nodes and Mainnet.
 
 ## 🚀 Features
 
 - ✅ **WDK-First Architecture**: All blockchain interactions use WDK exclusively (no wagmi/viem/ethers for runtime operations)
-- 🏔️ **Full Avalanche Support**: Local node, Fuji Testnet (43113), and Mainnet (43114)
+- 🏔️ **Full Avalanche Support**: Fuji Testnet (43113) out of the box, with optional local node and Mainnet (43114)
 - 🔐 **Secure Seed Management**: Encrypted seed phrase storage with IndexedDB and WebCrypto (AES-GCM)
 - 🔄 **Network Switching**: Seamless switching between Local, Fuji, and Mainnet
 - 💼 **Modern Wallet UI**: Beautiful wallet interface with seed export and lock/unlock features
@@ -45,39 +45,57 @@ curl -sSfL https://raw.githubusercontent.com/ava-labs/avalanche-cli/main/scripts
 yarn install
 ```
 
-### 2. Start Local Avalanche Node
+### 2. Configure Fuji Environment
+
+Create `packages/nextjs/.env.local` and add your client-side keys:
 
 ```bash
-yarn avalanche:up
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_fuji_alchemy_key   # optional (falls back to Scaffold-ETH demo key)
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 ```
 
-This will start a local Avalanche C-Chain node at `http://127.0.0.1:9650/ext/bc/C/rpc` with Chain ID `1337`.
+Create `packages/hardhat/.env` (the next step will populate the encrypted key automatically):
 
-Check node status:
 ```bash
-yarn avalanche:status
+ALCHEMY_API_KEY=your_fuji_alchemy_key              # optional but recommended for RPC stability
+ETHERSCAN_V2_API_KEY=your_snowtrace_api_key        # optional, required for contract verification
+DEPLOYER_PRIVATE_KEY_ENCRYPTED=                   # leave blank for now
 ```
 
-### 3. Deploy Smart Contracts
+### 3. Import Your Fuji Deployer Account
 
-Deploy to local network:
+Use the wallet you manage through the UI (or any funded Fuji account) and encrypt its private key for Hardhat:
+
 ```bash
-yarn deploy:local
+yarn account:import
 ```
 
-Deploy to Fuji testnet:
+Follow the prompt to paste the private key and set a password. This command writes `DEPLOYER_PRIVATE_KEY_ENCRYPTED` to `packages/hardhat/.env`.
+
+### 4. Fund Your Fuji Wallet
+
+- Copy your wallet address from the `/wallet` page
+- Request test AVAX from one of the faucets listed in [Getting Testnet AVAX](#getting-testnet-avax)
+- Wait for confirmation and ensure your wallet shows the new balance
+
+### 5. Deploy Smart Contracts (Fuji Default)
+
 ```bash
+yarn compile
+yarn deploy          # defaults to avalancheFuji
+# or run explicitly
 yarn deploy:fuji
 ```
-> **Note**: For detailed testnet deployment instructions, see the [Deploying Smart Contracts to Testnet](#-deploying-smart-contracts-to-testnet) section below.
 
-Deploy to Mainnet (be careful!):
+> **Note**: Detailed deployment guidance lives in [Deploying Smart Contracts to Testnet](#-deploying-smart-contracts-to-testnet).
+
+To target Mainnet:
 ```bash
 yarn deploy:mainnet
 ```
-> **Warning**: Only deploy to mainnet after thorough testing on local and testnet environments.
+> **Warning**: Only deploy to Mainnet after thorough testing on Fuji.
 
-### 4. Start Frontend
+### 6. Start Frontend
 
 ```bash
 yarn start
@@ -105,7 +123,7 @@ Visit `http://localhost:3000` and navigate to the **Avalanche Wallet** page to c
 ### Network Switching
 
 - Use the network dropdown in the header or wallet page
-- Switch between Local, Fuji Testnet, and Mainnet
+- Fuji Testnet is loaded by default; you can switch to Mainnet (and to Local if you customize the config)
 - Your wallet persists across network switches
 
 ### Getting Testnet AVAX
@@ -179,8 +197,10 @@ Follow these steps to deploy your smart contracts to Avalanche Fuji Testnet:
    ```bash
    yarn compile
    ```
-2. Deploy to Fuji testnet:
+2. Deploy to Fuji testnet (default target):
    ```bash
+   yarn deploy          # defaults to avalancheFuji
+   # or run explicitly
    yarn deploy:fuji
    ```
 3. When prompted, enter the password you created in Step 3
@@ -242,8 +262,8 @@ You can verify your deployment in two ways:
 | Command | Description |
 |---------|-------------|
 | `yarn compile` | Compile smart contracts |
-| `yarn deploy:local` | Deploy to local Avalanche |
-| `yarn deploy:fuji` | Deploy to Fuji testnet |
+| `yarn deploy` | Deploy to Fuji testnet (default network) |
+| `yarn deploy:fuji` | Deploy to Fuji testnet explicitly |
 | `yarn deploy:mainnet` | Deploy to mainnet |
 | `yarn test` | Run contract tests |
 
@@ -397,16 +417,29 @@ yarn test
 
 ## 📝 Environment Variables
 
-Create a `.env.local` file in `packages/nextjs/`:
+### Frontend (`packages/nextjs/.env.local`)
 
 ```bash
-# Default network (local, fuji, mainnet)
-NEXT_PUBLIC_NETWORK=local
-
-# Deployer seed phrase (for contract deployment)
-# NEVER commit real seed phrases!
-DEPLOYER_SEED_PHRASE=your_test_seed_phrase_here
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_fuji_alchemy_key         # optional but recommended
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_walletconnect_project_id
 ```
+
+### Hardhat (`packages/hardhat/.env`)
+
+Running `yarn account:import` stores an encrypted deployer key:
+
+```bash
+DEPLOYER_PRIVATE_KEY_ENCRYPTED={"address":"...","crypto":{...}}
+```
+
+You can add optional RPC and explorer keys that the tooling will pick up automatically:
+
+```bash
+ALCHEMY_API_KEY=your_fuji_alchemy_key
+ETHERSCAN_V2_API_KEY=your_snowtrace_api_key
+```
+
+> ⚠️ Never commit `.env` files—store them securely per developer.
 
 ## 🚢 Deployment
 
@@ -423,9 +456,11 @@ yarn vercel
 # Compile contracts
 yarn compile
 
-# Deploy to Fuji testnet
+# Deploy to Fuji testnet (default target)
+yarn deploy
+# or explicitly
 yarn deploy:fuji
-# See the "Deploying Smart Contracts to Testnet" section for detailed steps
+# See the \"Deploying Smart Contracts to Testnet\" section for detailed steps
 
 # Deploy to Mainnet (requires funded account)
 yarn deploy:mainnet

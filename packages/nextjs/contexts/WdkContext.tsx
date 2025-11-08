@@ -80,6 +80,29 @@ const initialState: WdkContextState = {
   error: null,
 };
 
+const isKnownNetworkId = (networkId: string | null): networkId is NetworkId =>
+  typeof networkId === "string" && Object.prototype.hasOwnProperty.call(AVALANCHE_NETWORKS, networkId);
+
+const normalizeNetworkId = (networkId: string | null): NetworkId => {
+  if (!isKnownNetworkId(networkId)) {
+    return DEFAULT_NETWORK;
+  }
+
+  if (networkId === "local") {
+    return DEFAULT_NETWORK;
+  }
+
+  return networkId;
+};
+
+const ensureNetworkId = async (networkId: string | null): Promise<NetworkId> => {
+  const normalized = normalizeNetworkId(networkId);
+  if (normalized !== networkId) {
+    await SeedVault.saveNetwork(normalized);
+  }
+  return normalized;
+};
+
 // Provider Props
 interface WdkProviderProps {
   children: ReactNode;
@@ -97,7 +120,11 @@ export function WdkProvider({ children }: WdkProviderProps) {
    */
   const initializeWdk = useCallback(async (seedPhrase: string, networkId: NetworkId) => {
     try {
-      const network = AVALANCHE_NETWORKS[networkId];
+      const safeNetworkId = normalizeNetworkId(networkId);
+      const network = AVALANCHE_NETWORKS[safeNetworkId];
+      if (!network) {
+        throw new Error(`Unsupported network selection: ${networkId}`);
+      }
       
       // Create WDK instance and register Avalanche wallet
       const wdk = new WDK(seedPhrase).registerWallet("avalanche", WalletManagerEvm, {
@@ -148,9 +175,7 @@ export function WdkProvider({ children }: WdkProviderProps) {
       await SeedVault.save(seedPhrase);
       
       // Load saved network or use default
-      const savedNetwork = (await SeedVault.loadNetwork()) as NetworkId | null;
-      const networkId = savedNetwork || DEFAULT_NETWORK;
-      await SeedVault.saveNetwork(networkId);
+      const networkId = await ensureNetworkId(await SeedVault.loadNetwork());
       
       // Initialize WDK
       await initializeWdk(seedPhrase, networkId);
@@ -179,9 +204,7 @@ export function WdkProvider({ children }: WdkProviderProps) {
       await SeedVault.save(seedPhrase.trim());
       
       // Load saved network or use default
-      const savedNetwork = (await SeedVault.loadNetwork()) as NetworkId | null;
-      const networkId = savedNetwork || DEFAULT_NETWORK;
-      await SeedVault.saveNetwork(networkId);
+      const networkId = await ensureNetworkId(await SeedVault.loadNetwork());
       
       // Initialize WDK
       await initializeWdk(seedPhrase.trim(), networkId);
@@ -206,8 +229,7 @@ export function WdkProvider({ children }: WdkProviderProps) {
       }
       
       // Load saved network
-      const savedNetwork = (await SeedVault.loadNetwork()) as NetworkId | null;
-      const networkId = savedNetwork || DEFAULT_NETWORK;
+      const networkId = await ensureNetworkId(await SeedVault.loadNetwork());
       
       // Initialize WDK
       await initializeWdk(seedPhrase, networkId);
@@ -258,10 +280,11 @@ export function WdkProvider({ children }: WdkProviderProps) {
       }
       
       // Save new network selection
-      await SeedVault.saveNetwork(networkId);
+      const resolvedNetworkId = await ensureNetworkId(networkId);
+      await SeedVault.saveNetwork(resolvedNetworkId);
       
       // Re-initialize WDK with new network
-      await initializeWdk(seedPhrase, networkId);
+      await initializeWdk(seedPhrase, resolvedNetworkId);
       
       setState(prev => ({ ...prev, isSwitchingNetwork: false }));
     } catch (error) {
@@ -317,10 +340,7 @@ export function WdkProvider({ children }: WdkProviderProps) {
         }
 
         let networkId = (await SeedVault.loadNetwork()) as NetworkId | null;
-        if (!networkId) {
-          networkId = DEFAULT_NETWORK;
-          await SeedVault.saveNetwork(networkId);
-        }
+        networkId = await ensureNetworkId(networkId);
 
         if (!cancelled) {
           await initializeWdk(seedPhrase, networkId);

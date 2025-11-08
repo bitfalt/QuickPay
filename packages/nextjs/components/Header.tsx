@@ -116,7 +116,9 @@ const NetworkSelector = () => {
         </svg>
       </summary>
       <ul className="menu dropdown-content mt-3 w-64 space-y-2 rounded-3xl border border-[#023859]/50 bg-[#011c40]/90 px-4 py-4 text-[#a7ebf2] shadow-[0_24px_45px_-26px_rgba(1,28,64,0.85)] backdrop-blur-xl">
-        {Object.values(AVALANCHE_NETWORKS).map(network => (
+        {Object.values(AVALANCHE_NETWORKS)
+          .filter(network => network.id !== "local")
+          .map(network => (
           <li key={network.id}>
             <button
               onClick={() => handleNetworkSwitch(network.id as NetworkId)}
@@ -147,7 +149,6 @@ const NetworkSelector = () => {
  */
 export const Header = () => {
   const { currentNetwork } = useWdk();
-  const isLocalNetwork = currentNetwork.id === "local";
 
   const burgerMenuRef = useRef<HTMLDetailsElement>(null);
   useOutsideClick(burgerMenuRef, () => {

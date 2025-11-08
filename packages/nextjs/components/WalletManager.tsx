@@ -425,17 +425,19 @@ export function WalletManager() {
           <label className="label">
             <span className="label-text font-semibold">Network</span>
           </label>
-          <select 
+          <select
             className="select select-bordered w-full"
             value={currentNetwork.id}
             onChange={(e) => handleNetworkSwitch(e.target.value as NetworkId)}
             disabled={isSwitchingNetwork}
           >
-            {Object.values(AVALANCHE_NETWORKS).map((network) => (
-              <option key={network.id} value={network.id}>
-                {network.displayName} (Chain ID: {network.chainId})
-              </option>
-            ))}
+            {Object.values(AVALANCHE_NETWORKS)
+              .filter(network => network.id !== "local")
+              .map(network => (
+                <option key={network.id} value={network.id}>
+                  {network.displayName} (Chain ID: {network.chainId})
+                </option>
+              ))}
           </select>
           {isSwitchingNetwork && (
             <label className="label">
