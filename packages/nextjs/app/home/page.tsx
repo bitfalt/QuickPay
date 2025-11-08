@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowDownRightIcon,
   ArrowUpRightIcon,
@@ -10,16 +11,9 @@ import {
 } from "@heroicons/react/24/outline";
 
 import MobileShell from "~~/components/quickpay/MobileShell";
-import {
-  crcBalance,
-  exchangeRateHistory,
-  formatCurrency,
-  formatDateLabel,
-  formatTime,
-  latestTransactions,
-  newsFeed,
-  usdBalance,
-} from "~~/utils/mockData";
+import { usePortfolioBalances } from "~~/hooks/quickpay/usePortfolioBalances";
+import { useWdkTransactions } from "~~/hooks/quickpay/useWdkTransactions";
+import { formatCurrency, formatDateLabel, formatTime, newsFeed } from "~~/utils/mockData";
 
 const getCurrencyCode = (currency: string) => {
   if (currency === "€") {
@@ -29,33 +23,83 @@ const getCurrencyCode = (currency: string) => {
   return currency;
 };
 
-const crcNumberFormatter = new Intl.NumberFormat("en-US");
-
 const HomePage = () => {
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const {
+    isLoading: isPortfolioLoading,
+    error: portfolioError,
+    totalUsd,
+    totalCrc,
+    usdToCrc,
+    exchangeRateHistory: fxHistory,
+  } = usePortfolioBalances();
+  const {
+    transactions,
+    isLoading: isLoadingTransactions,
+    error: transactionsError,
+  } = useWdkTransactions({
+    limit: 5,
+    pollInterval: 30_000,
+    includeNativeTransfers: true,
+  });
+  const showRoutescanHelp = transactionsError
+    ? transactionsError.toLowerCase().includes("routescan")
+    : false;
 
-  const values = exchangeRateHistory.map(point => point.crcPerUsd);
-  const highestRate = Math.max(...values);
-  const lowestRate = Math.min(...values);
-  const rateRange = highestRate - lowestRate || 1;
-  const latestRate = exchangeRateHistory.length ? exchangeRateHistory[exchangeRateHistory.length - 1].crcPerUsd : highestRate;
   const chartWidth = 300;
   const chartHeight = 118;
   const topPadding = 18;
   const bottomPadding = 22;
   const usableHeight = chartHeight - topPadding - bottomPadding;
-  const step = exchangeRateHistory.length > 1 ? chartWidth / (exchangeRateHistory.length - 1) : chartWidth;
+  const chartData = useMemo(() => {
+    const baselineY = chartHeight - bottomPadding;
+    if (!fxHistory.length) {
+      const fallbackLinePoints = `0,${baselineY} ${chartWidth},${baselineY}`;
+      const fallbackAreaPoints = `0,${baselineY} ${fallbackLinePoints} ${chartWidth},${baselineY}`;
+      return {
+        linePoints: fallbackLinePoints,
+        areaPoints: fallbackAreaPoints,
+        highestRate: 0,
+        lowestRate: 0,
+        latestRate: usdToCrc || 0,
+        coordinates: [] as Array<[number, number]>,
+        hasHistory: false,
+      };
+    }
 
-  const linePoints = exchangeRateHistory
-    .map((point, index) => {
+    const values = fxHistory.map(point => point.crcPerUsd);
+    const highestRate = Math.max(...values);
+    const lowestRate = Math.min(...values);
+    const rateRange = highestRate - lowestRate || 1;
+    const step = fxHistory.length > 1 ? chartWidth / (fxHistory.length - 1) : chartWidth;
+    const coordinates = fxHistory.map((point, index) => {
       const normalized = (point.crcPerUsd - lowestRate) / rateRange;
       const x = index * step;
       const y = chartHeight - bottomPadding - normalized * usableHeight;
-      return `${x},${y}`;
-    })
-    .join(" ");
+      return [x, y] as [number, number];
+    });
+    const linePoints = coordinates.map(([x, y]) => `${x},${y}`).join(" ");
+    const areaPoints = `0,${chartHeight - bottomPadding} ${linePoints} ${chartWidth},${chartHeight - bottomPadding}`;
+    const latestRate = usdToCrc || values[values.length - 1] || 0;
+    return {
+      linePoints,
+      areaPoints,
+      highestRate,
+      lowestRate,
+      latestRate,
+      coordinates,
+      hasHistory: true,
+    };
+  }, [chartHeight, chartWidth, bottomPadding, fxHistory, usableHeight, usdToCrc]);
 
-  const areaPoints = `0,${chartHeight - bottomPadding} ${linePoints} ${chartWidth},${chartHeight - bottomPadding}`;
+  const formattedUsdBalance =
+    !isPortfolioLoading && !portfolioError ? formatCurrency(totalUsd || 0, "USD") : null;
+  const formattedCrcBalance =
+    !isPortfolioLoading && !portfolioError
+      ? new Intl.NumberFormat("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(
+          Number.isFinite(totalCrc) ? totalCrc : 0
+        )
+      : null;
 
   const totalNews = newsFeed.length;
   const activeNews = totalNews ? newsFeed[activeNewsIndex] : null;
@@ -81,13 +125,23 @@ const HomePage = () => {
           <div>
             <p className="text-sm text-[#a7ebf2]/70">Available</p>
             <p className="text-lg font-semibold drop-shadow-[0_8px_24px_rgba(1,28,64,0.35)]">
-              {formatCurrency(usdBalance.amount, usdBalance.currency)}
+              {portfolioError ? (
+                <span className="text-[#ff9e9e]">Unavailable</span>
+              ) : isPortfolioLoading ? (
+                <span className="animate-pulse text-[#a7ebf2]/60">Loading…</span>
+              ) : (
+                formattedUsdBalance
+              )}
             </p>
           </div>
           <div className="flex flex-col items-end text-right text-xs text-[#a7ebf2]/60">
-            <span>{usdBalance.currency}</span>
+            <span>USD</span>
             <span className="mt-1 text-sm font-semibold text-[#a7ebf2]">
-              {crcNumberFormatter.format(crcBalance.amount)} CRC
+              {portfolioError
+                ? "—"
+                : isPortfolioLoading
+                  ? "…"
+                  : `${formattedCrcBalance ?? "0"} CRC`}
             </span>
           </div>
         </div>
@@ -95,7 +149,9 @@ const HomePage = () => {
         <div className="mt-4">
           <div className="flex items-center justify-between text-[11px] text-[#a7ebf2]/60">
             <span>CRC needed per 1 USD</span>
-            <span className="font-medium text-[#a7ebf2]">{latestRate.toFixed(1)} today</span>
+            <span className="font-medium text-[#a7ebf2]">
+              {chartData.latestRate ? `${chartData.latestRate.toFixed(2)} today` : "—"}
+            </span>
           </div>
           <svg
             viewBox={`0 0 ${chartWidth} ${chartHeight}`}
@@ -110,113 +166,148 @@ const HomePage = () => {
                 <stop offset="100%" stopColor="rgba(84, 172, 191, 0)" />
               </linearGradient>
             </defs>
-            <polyline fill="url(#quickpayGradient)" stroke="none" points={areaPoints} />
+            <polyline fill="url(#quickpayGradient)" stroke="none" points={chartData.areaPoints} />
             <polyline
               fill="none"
               stroke="rgba(167,235,242,0.9)"
               strokeWidth="3"
               strokeLinecap="round"
-              points={linePoints}
+              points={chartData.linePoints}
             />
-            {exchangeRateHistory.map((point, index) => {
-              const normalized = (point.crcPerUsd - lowestRate) / rateRange;
-              const x = index * step;
-              const y = chartHeight - bottomPadding - normalized * usableHeight;
-              return (
-                <g key={point.day}>
-                  <circle
-                    cx={x}
-                    cy={y}
-                    r={4.5}
-                    fill="#a7ebf2"
-                    stroke="rgba(1,28,64,0.4)"
-                    strokeWidth="1.5"
-                    className="cursor-pointer"
-                  />
-                  <title>{`${point.day}: ₡${point.crcPerUsd.toFixed(1)} per USD`}</title>
-                </g>
-              );
-            })}
+            {chartData.hasHistory &&
+              fxHistory.map((point, index) => {
+                const coordinate = chartData.coordinates[index];
+                if (!coordinate) return null;
+                const [x, y] = coordinate;
+                return (
+                  <g key={point.date}>
+                    <circle
+                      cx={x}
+                      cy={y}
+                      r={4.5}
+                      fill="#a7ebf2"
+                      stroke="rgba(1,28,64,0.4)"
+                      strokeWidth="1.5"
+                      className="cursor-pointer"
+                    />
+                    <title>{`${point.day}: ₡${point.crcPerUsd.toFixed(2)} per USD`}</title>
+                  </g>
+                );
+              })}
           </svg>
           <div className="mt-2 flex items-center justify-between text-[10px] uppercase tracking-[0.35em] text-[#a7ebf2]/30">
-            {exchangeRateHistory.map(point => (
-              <span key={point.day}>{point.day}</span>
-            ))}
+            {fxHistory.length ? (
+              fxHistory.map(point => <span key={point.date}>{point.day}</span>)
+            ) : (
+              <span className="text-[#a7ebf2]/40">No FX data</span>
+            )}
           </div>
           <div className="mt-2 flex items-center justify-between text-[9px] uppercase tracking-[0.28em] text-[#a7ebf2]/30">
-            <span>Low {lowestRate.toFixed(1)}</span>
-            <span>High {highestRate.toFixed(1)}</span>
+            <span>Low {chartData.hasHistory ? chartData.lowestRate.toFixed(2) : "N/A"}</span>
+            <span>High {chartData.hasHistory ? chartData.highestRate.toFixed(2) : "N/A"}</span>
           </div>
+          {portfolioError && (
+            <p className="mt-3 text-xs text-[#ff9e9e]">
+              {portfolioError}
+            </p>
+          )}
         </div>
       </section>
       <section className="mt-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[#a7ebf2]">Latest Transactions</h2>
-          <button
-            type="button"
+          <Link
+            href="/home/transactions"
             className="text-xs font-medium uppercase tracking-[0.35em] text-[#a7ebf2]/60"
-            aria-label="Open detailed transactions"
+            aria-label="View all transactions"
           >
             See all
-          </button>
+          </Link>
         </div>
 
-        <ul className="mt-3 space-y-2">
-          {latestTransactions.map(transaction => {
-            const amount = Math.abs(transaction.amount);
-            const currencyCode = getCurrencyCode(transaction.currency);
-            const formattedAmount = formatCurrency(amount, currencyCode);
-            const symbol = transaction.amount < 0 ? "-" : "+";
-            const isOutgoing = transaction.amount < 0;
-            const statusLabel = isOutgoing ? "Sent" : "Received";
-            const badgeClasses = isOutgoing
-              ? "border-[#023859]/60 bg-[#011c40]/75 text-[#a7ebf2]/75"
-              : "border-[#54acbf]/60 bg-[#54acbf]/15 text-[#54acbf]";
+        <div className="mt-3 space-y-2">
+          {isLoadingTransactions ? (
+            <div className="glass-panel animate-pulse px-4 py-6 text-sm text-[#a7ebf2]/60">Fetching latest activity…</div>
+          ) : transactionsError ? (
+            <div className="glass-panel px-4 py-6 text-sm text-[#ff9e9e]">
+              <p className="font-medium text-[#ffb4b4]">Unable to load transactions right now.</p>
+              <p className="mt-2 break-words text-[#ff9e9e]">{transactionsError}</p>
+              {showRoutescanHelp && (
+                <p className="mt-3 text-xs text-[#ffb4b4]/80">
+                  Routescan requests can be made with or without an API key. If you set `NEXT_PUBLIC_ROUTESCAN_API_KEY`,
+                  double-check the value and rate limits.
+                </p>
+              )}
+            </div>
+          ) : transactions.length === 0 ? (
+            <div className="glass-panel px-4 py-6 text-sm text-[#a7ebf2]/60">
+              Your latest transactions will appear here once activity occurs.
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {transactions.map(transaction => {
+                const amount = Math.abs(transaction.amount);
+                const currencyCode = getCurrencyCode(transaction.currency);
+                const isOutgoing = transaction.direction === "outgoing" || transaction.amount < 0;
+                const statusLabel = isOutgoing ? "Sent" : "Received";
+                const badgeClasses = isOutgoing
+                  ? "border-[#023859]/60 bg-[#011c40]/75 text-[#a7ebf2]/75"
+                  : "border-[#54acbf]/60 bg-[#54acbf]/15 text-[#54acbf]";
+                const isFiatCurrency = /^[A-Z]{3}$/.test(currencyCode);
+                const precision = amount >= 1 ? 2 : 4;
+                const formattedAmount = isFiatCurrency
+                  ? formatCurrency(amount, currencyCode)
+                  : `${amount.toFixed(precision)} ${transaction.currency}`;
+                const symbol = isOutgoing ? "-" : "+";
 
-            return (
-              <li
-                key={transaction.id}
-                className="glass-panel flex items-center justify-between px-4 py-3 text-[#a7ebf2]"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-[#a7ebf2]/10 shadow-[0_15px_30px_-20px_rgba(1,28,64,0.9)] ${
-                      isOutgoing
-                        ? "bg-[linear-gradient(135deg,rgba(2,53,89,0.45),rgba(1,28,64,0.28))]"
-                        : "bg-[linear-gradient(135deg,rgba(84,172,191,0.32),rgba(167,235,242,0.18))]"
-                    }`}
+                return (
+                  <li
+                    key={transaction.id}
+                    className="glass-panel flex items-center justify-between px-4 py-3 text-[#a7ebf2]"
                   >
-                    {isOutgoing ? (
-                      <ArrowUpRightIcon className="h-5 w-5 text-[#a0bacc]" />
-                    ) : (
-                      <ArrowDownRightIcon className="h-5 w-5 text-[#54acbf]" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-semibold">{transaction.name}</p>
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`flex h-11 w-11 items-center justify-center rounded-2xl border border-[#a7ebf2]/10 shadow-[0_15px_30px_-20px_rgba(1,28,64,0.9)] ${
+                          isOutgoing
+                            ? "bg-[linear-gradient(135deg,rgba(2,53,89,0.45),rgba(1,28,64,0.28))]"
+                            : "bg-[linear-gradient(135deg,rgba(84,172,191,0.32),rgba(167,235,242,0.18))]"
+                        }`}
+                      >
+                        {isOutgoing ? (
+                          <ArrowUpRightIcon className="h-5 w-5 text-[#a0bacc]" />
+                        ) : (
+                          <ArrowDownRightIcon className="h-5 w-5 text-[#54acbf]" />
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold" title={transaction.counterpartyAddress ?? undefined}>
+                            {isOutgoing ? `Sent` : `Received`} {transaction.counterparty ? `with ${transaction.counterparty}` : ""}
+                          </p>
+                          <span className={`hidden rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.3em] md:inline-flex ${badgeClasses}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <span className={`mt-2 inline-flex rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.35em] md:hidden ${badgeClasses}`}>
+                          {statusLabel}
+                        </span>
+                        <p className="mt-2 text-[10px] uppercase tracking-[0.35em] text-[#a7ebf2]/40">
+                          {formatDateLabel(transaction.timestamp)} • {formatTime(transaction.timestamp)}
+                        </p>
+                      </div>
                     </div>
-                    <p className="truncate text-[13px] text-[#a7ebf2]/60">{transaction.description}</p>
-                    <span
-                      className={`mt-2 inline-flex rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.35em] ${badgeClasses}`}
-                    >
-                      {statusLabel}
-                    </span>
-                    <p className="mt-2 text-[10px] uppercase tracking-[0.35em] text-[#a7ebf2]/40">
-                      {formatDateLabel(transaction.timestamp)} • {formatTime(transaction.timestamp)}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-base font-semibold ${isOutgoing ? "text-[#a0bacc]" : "text-[#54acbf]"}`}>
-                    {symbol}
-                    {formattedAmount}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                    <div className="text-right">
+                      <p className={`text-base font-semibold ${isOutgoing ? "text-[#a0bacc]" : "text-[#54acbf]"}`}>
+                        {symbol}
+                        {formattedAmount}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
       </section>
 
       <div className="divider-line" aria-hidden />

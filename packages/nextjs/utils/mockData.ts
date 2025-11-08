@@ -1,12 +1,3 @@
-export type Transaction = {
-  id: string;
-  name: string;
-  description: string;
-  amount: number;
-  currency: string;
-  timestamp: string;
-};
-
 export type NewsItem = {
   id: string;
   title: string;
@@ -18,41 +9,6 @@ export type ExchangeRatePoint = {
   day: string;
   crcPerUsd: number;
 };
-
-export const latestTransactions: Transaction[] = [
-  {
-    id: "1",
-    name: "Sent to Aurora Books",
-    description: "Stationery restock",
-    amount: -89.36,
-    currency: "€",
-    timestamp: "2025-11-06T14:05:00Z",
-  },
-  {
-    id: "2",
-    name: "Received from City Bites",
-    description: "Lunch invoice",
-    amount: 142.18,
-    currency: "€",
-    timestamp: "2025-11-06T11:42:00Z",
-  },
-  {
-    id: "3",
-    name: "Sent to Blue Taxi Co.",
-    description: "Airport transfer",
-    amount: -24.5,
-    currency: "€",
-    timestamp: "2025-11-05T08:31:00Z",
-  },
-  {
-    id: "4",
-    name: "Received from Juniper Labs",
-    description: "Consulting retainer",
-    amount: 502.73,
-    currency: "€",
-    timestamp: "2025-11-04T16:57:00Z",
-  },
-];
 
 export const newsFeed: NewsItem[] = [
   {
