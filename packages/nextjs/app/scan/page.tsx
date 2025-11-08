@@ -38,12 +38,43 @@ const ScanPage = () => {
     }
   }, []);
 
-  const extractAddress = useCallback((raw: string) => {
-    let value = raw.trim();
-    if (value.startsWith("quickpay://")) {
-      value = value.replace("quickpay://", "");
+  type ParsedPayload =
+    | { kind: "send"; address: string; params: URLSearchParams }
+    | { kind: "link"; url: URL };
+
+  const parseQuickPayPayload = useCallback((raw: string): ParsedPayload | null => {
+    const value = raw.trim();
+    if (!value) {
+      return null;
     }
-    return value;
+
+    if (/^https?:\/\//i.test(value)) {
+      try {
+        const url = new URL(value);
+        return { kind: "link", url };
+      } catch (error) {
+        console.warn("Failed to parse URL payload", error);
+        return null;
+      }
+    }
+
+    if (value.startsWith("quickpay://")) {
+      const withoutScheme = value.slice("quickpay://".length);
+      const [addressPart = "", queryPart = ""] = withoutScheme.split("?");
+      try {
+        const address = decodeURIComponent(addressPart).trim();
+        if (!address) {
+          return null;
+        }
+        const params = new URLSearchParams(queryPart);
+        return { kind: "send", address, params };
+      } catch (error) {
+        console.warn("Failed to parse quickpay payload", error);
+        return null;
+      }
+    }
+
+    return { kind: "send", address: value, params: new URLSearchParams() };
   }, []);
 
   const handleResult = useCallback(
@@ -51,10 +82,41 @@ const ScanPage = () => {
       if (!text || isProcessing) return;
       setIsProcessing(true);
       stopScanner();
-      const address = extractAddress(text);
-      router.replace(`/send/amount?recipient=${encodeURIComponent(address)}`);
+      const payload = parseQuickPayPayload(text);
+      if (!payload) {
+        setIsProcessing(false);
+        return;
+      }
+
+      if (payload.kind === "link") {
+        const { url } = payload;
+        if (typeof window !== "undefined" && url.origin === window.location.origin) {
+          router.replace(`${url.pathname}${url.search}${url.hash}`);
+        } else if (typeof window !== "undefined") {
+          window.location.href = url.toString();
+        }
+        return;
+      }
+
+      const params = new URLSearchParams({ recipient: payload.address });
+      const allowedKeys = new Set([
+        "amount",
+        "mode",
+        "splitTotal",
+        "splitPeople",
+        "splitShare",
+        "splitRole",
+      ]);
+
+      payload.params.forEach((value, key) => {
+        if (allowedKeys.has(key) && value) {
+          params.set(key, value);
+        }
+      });
+
+      router.replace(`/send/amount?${params.toString()}`);
     },
-    [extractAddress, isProcessing, router, stopScanner]
+    [isProcessing, parseQuickPayPayload, router, stopScanner]
   );
 
   useEffect(() => {

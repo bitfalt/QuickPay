@@ -7,6 +7,11 @@ import { CheckCircleIcon, ShareIcon } from "@heroicons/react/24/solid";
 import MobileShell from "~~/components/quickpay/MobileShell";
 import { useWdk } from "~~/contexts/WdkContext";
 
+const amountFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 const SuccessPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,24 +19,54 @@ const SuccessPage = () => {
 
   const amountParam = searchParams.get("amount") ?? "0";
   const recipientParam = searchParams.get("recipient");
+  const modeParam = searchParams.get("mode");
+  const splitTotalParam = searchParams.get("splitTotal");
+  const splitPeopleParam = searchParams.get("splitPeople");
+  const splitShareParam = searchParams.get("splitShare");
+  const splitRoleParam = searchParams.get("splitRole") === "participant" ? "participant" : "initiator";
+
   const formatAddress = (value: string | null | undefined) => {
     if (!value) return "Loading address…";
     if (value.length <= 10) return value;
     return `${value.slice(0, 6)}…${value.slice(-4)}`;
   };
 
+  const parseNumber = (value: string | null) => {
+    if (!value) return 0;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const isSplitMode = modeParam === "split";
+  const numericAmount = parseNumber(amountParam);
+  const splitShareValue = isSplitMode ? parseNumber(splitShareParam ?? amountParam) : 0;
+  const splitTotalValue = isSplitMode ? parseNumber(splitTotalParam) : 0;
+  const splitPeopleCount = isSplitMode ? Math.max(0, Math.floor(parseNumber(splitPeopleParam))) : 0;
+  const derivedSplitTotal = isSplitMode
+    ? splitTotalValue > 0
+      ? splitTotalValue
+      : splitShareValue > 0 && splitPeopleCount > 0
+        ? splitShareValue * splitPeopleCount
+        : 0
+    : 0;
+
   const recipient = recipientParam ? formatAddress(recipientParam) : "Recipient not provided";
   const fromAccount = formatAddress(address);
 
   const formattedAmount = useMemo(() => {
-    const numericValue = Number(amountParam);
-    if (Number.isNaN(numericValue)) return "0.00";
-    return numericValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }, [amountParam]);
+    return amountFormatter.format(numericAmount);
+  }, [numericAmount]);
+
+  const formattedSplitTotal = useMemo(() => {
+    if (!isSplitMode) return "";
+    return amountFormatter.format(derivedSplitTotal);
+  }, [derivedSplitTotal, isSplitMode]);
 
   const onDone = () => {
     router.replace("/home");
   };
+
+  const amountLabel = isSplitMode ? "Your share" : "Amount";
 
   return (
     <MobileShell backHref="/home" title="Payment Success">
@@ -52,9 +87,23 @@ const SuccessPage = () => {
           <h2 className="text-center text-lg font-semibold text-[#a7ebf2]">Receipt</h2>
           <div className="mt-5 grid grid-cols-1 gap-4 text-sm text-[#a7ebf2]">
             <div className="flex items-center justify-between">
-              <span className="text-[#a7ebf2]/60">Amount</span>
+              <span className="text-[#a7ebf2]/60">{amountLabel}</span>
               <span className="text-[#a7ebf2] font-semibold">¢{formattedAmount}</span>
             </div>
+            {isSplitMode && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#a7ebf2]/60">Total bill</span>
+                  <span className="text-[#a7ebf2] font-semibold">¢{formattedSplitTotal}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#a7ebf2]/60">People splitting</span>
+                  <span className="text-[#a7ebf2] font-semibold">
+                    {splitPeopleCount > 0 ? splitPeopleCount : "—"}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-[#a7ebf2]/60">To</span>
               <span className="font-semibold text-[#a7ebf2]">{recipient}</span>
