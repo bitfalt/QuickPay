@@ -191,12 +191,11 @@ const HomePage = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold">{transaction.name}</p>
-                      <span className={`hidden rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.3em] md:inline-flex ${badgeClasses}`}>
-                        {statusLabel}
-                      </span>
                     </div>
                     <p className="truncate text-[13px] text-[#a7ebf2]/60">{transaction.description}</p>
-                    <span className={`mt-2 inline-flex rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.35em] md:hidden ${badgeClasses}`}>
+                    <span
+                      className={`mt-2 inline-flex rounded-full border px-2 py-[2px] text-[10px] font-semibold uppercase tracking-[0.35em] ${badgeClasses}`}
+                    >
                       {statusLabel}
                     </span>
                     <p className="mt-2 text-[10px] uppercase tracking-[0.35em] text-[#a7ebf2]/40">
