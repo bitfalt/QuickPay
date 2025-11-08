@@ -8,7 +8,7 @@ import { useWdk } from "~~/contexts/WdkContext";
 
 const ReceivePage = () => {
   const { address } = useWdk();
-  const qrValue = address ?? "";
+  const qrValue = address ? `quickpay://${address}` : "";
 
   return (
     <MobileShell
