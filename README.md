@@ -1,3 +1,12 @@
+<div align="center">
+  <img src="packages/nextjs/public/logo.svg" alt="QuickPay Logo" width="200" />
+  <br />
+  <br />
+  <img src="packages/nextjs/public/thumbnail.jpg" alt="QuickPay Preview" width="600" />
+</div>
+
+<br />
+
 # QuickPay – Web2 UX, Web3 Ownership
 
 ### 🔹 Short Description
