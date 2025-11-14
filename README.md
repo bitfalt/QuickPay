@@ -1,8 +1,22 @@
 <div align="center">
-  <img src="assets/avalanche-logo.png" alt="Avalanche" height="60" style="margin: 0 120px;" />
-  <img src="assets/wdk-logo.png" alt="WDK" height="60" style="margin: 0 120px;" />
-  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="60" style="margin: 0 120px;" />
-  <img src="assets/dojo-logo.png" alt="Dojo" height="60" style="margin: 0 120px;" />
+  <table>
+    <tr>
+      <td align="center" style="padding: 20px 40px;">
+        <img src="assets/avalanche-logo.png" alt="Avalanche" height="80" />
+      </td>
+      <td align="center" style="padding: 20px 40px;">
+        <img src="assets/wdk-logo.png" alt="WDK" height="80" />
+      </td>
+    </tr>
+    <tr>
+      <td align="center" style="padding: 20px 40px;">
+        <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="80" />
+      </td>
+      <td align="center" style="padding: 20px 40px;">
+        <img src="assets/dojo-logo.png" alt="Dojo" height="80" />
+      </td>
+    </tr>
+  </table>
 </div>
 
 <br />
