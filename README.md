@@ -1,10 +1,11 @@
 <div align="center">
-  <img src="assets/avalanche-logo.png" alt="Avalanche" height="80" style="margin: 0 20px;" />
-  <img src="assets/wdk-logo.png" alt="WDK" height="80" style="margin: 0 20px;" />
-  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="80" style="margin: 0 20px;" />
-  <img src="assets/dojo-logo.png" alt="Dojo" height="80" style="margin: 0 20px;" />
+  <img src="assets/avalanche-logo.png" alt="Avalanche" height="100" style="margin: 0 40px;" />
+  <img src="assets/wdk-logo.png" alt="WDK" height="100" style="margin: 0 40px;" />
+  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="100" style="margin: 0 40px;" />
+  <img src="assets/dojo-logo.png" alt="Dojo" height="100" style="margin: 0 40px;" />
 </div>
 
+<br />
 <br />
 
 # QuickPay – Web2 UX, Web3 Ownership
