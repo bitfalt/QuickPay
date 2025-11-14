@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="packages/nextjs/public/logo.svg" alt="QuickPay Logo" width="200" />
-  <br />
-  <br />
-  <img src="packages/nextjs/public/thumbnail.jpg" alt="QuickPay Preview" width="600" />
+  <img src="assets/avalanche-logo.png" alt="Avalanche" height="80" style="margin: 0 20px;" />
+  <img src="assets/wdk-logo.png" alt="WDK" height="80" style="margin: 0 20px;" />
+  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="80" style="margin: 0 20px;" />
+  <img src="assets/dojo-logo.png" alt="Dojo" height="80" style="margin: 0 20px;" />
 </div>
 
 <br />
