@@ -1,8 +1,8 @@
 <div align="center">
-  <img src="assets/avalanche-logo.png" alt="Avalanche" height="100" style="margin: 0 40px;" />
-  <img src="assets/wdk-logo.png" alt="WDK" height="100" style="margin: 0 40px;" />
-  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="100" style="margin: 0 40px;" />
-  <img src="assets/dojo-logo.png" alt="Dojo" height="100" style="margin: 0 40px;" />
+  <img src="assets/avalanche-logo.png" alt="Avalanche" height="60" style="margin: 0 60px;" />
+  <img src="assets/wdk-logo.png" alt="WDK" height="60" style="margin: 0 60px;" />
+  <img src="assets/tether-usdt-logo.png" alt="Tether USDT" height="60" style="margin: 0 60px;" />
+  <img src="assets/dojo-logo.png" alt="Dojo" height="60" style="margin: 0 60px;" />
 </div>
 
 <br />
